@@ -1,0 +1,11 @@
+node_modules
+dist
+.env
+.env.*
+uploads/*
+logs/*
+coverage
+*.test.ts
+*.spec.ts
+.eslintrc.json
+README.md
