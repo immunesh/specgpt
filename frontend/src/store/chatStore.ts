@@ -97,10 +97,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   },
 
   abortStreaming: () =>
-    set((s) => ({
-      streamingMessage: s.streamingMessage ? { ...s.streamingMessage, isStreaming: false } : null,
-      isSending: false,
-    })),
+    set({ streamingMessage: null, isSending: false }),
 
   setLoading: (v) => set({ isLoading: v }),
   setSending: (v) => set({ isSending: v }),

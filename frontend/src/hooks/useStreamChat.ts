@@ -62,43 +62,41 @@ export function useStreamChat() {
             const payload = line.slice(6).trim()
             if (payload === '[DONE]') break
 
+            let event: StreamEvent
             try {
-              const event = JSON.parse(payload) as StreamEvent
-
-              switch (event.type) {
-                case 'start':
-                  finalConversationId = event.conversationId ?? finalConversationId
-                  store.startStreaming(event.messageId ?? crypto.randomUUID())
-
-                  // Update conversationId on user message
-                  if (event.conversationId && !conversationId) {
-                    store.setActiveConversation(event.conversationId)
-                    // Patch the optimistic user message conversationId
-                    store.setMessages(
-                      useChatStore.getState().messages.map((m) =>
-                        m.id === userMsg.id ? { ...m, conversationId: event.conversationId! } : m,
-                      ),
-                    )
-                  }
-                  break
-
-                case 'delta':
-                  if (event.content) store.appendStreamDelta(event.content)
-                  break
-
-                case 'sources':
-                  if (event.sources) store.setStreamSources(event.sources as SourceReference[])
-                  break
-
-                case 'end':
-                  store.endStreaming()
-                  break
-
-                case 'error':
-                  throw new Error(event.error ?? 'Stream error')
-              }
+              event = JSON.parse(payload) as StreamEvent
             } catch {
-              // Skip malformed SSE lines
+              continue // skip malformed JSON
+            }
+
+            switch (event.type) {
+              case 'start':
+                finalConversationId = event.conversationId ?? finalConversationId
+                if (event.conversationId && !conversationId) {
+                  store.setActiveConversation(event.conversationId)
+                  store.setMessages(
+                    useChatStore.getState().messages.map((m) =>
+                      m.id === userMsg.id ? { ...m, conversationId: event.conversationId! } : m,
+                    ),
+                  )
+                }
+                store.startStreaming(event.messageId ?? crypto.randomUUID())
+                break
+
+              case 'delta':
+                if (event.content) store.appendStreamDelta(event.content)
+                break
+
+              case 'sources':
+                if (event.sources) store.setStreamSources(event.sources as SourceReference[])
+                break
+
+              case 'end':
+                store.endStreaming()
+                break
+
+              case 'error':
+                throw new Error(event.error ?? 'Stream error')
             }
           }
         }

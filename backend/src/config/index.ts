@@ -16,8 +16,10 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default('15m'),
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
 
-  ANTHROPIC_API_KEY: z.string().min(1, 'ANTHROPIC_API_KEY is required'),
-  CLAUDE_MODEL: z.string().default('claude-sonnet-4-6'),
+  ANTHROPIC_API_KEY: z.string().optional(),
+  GROQ_API_KEY: z.string().min(1, 'GROQ_API_KEY is required'),
+  GROQ_MODEL: z.string().default('llama-3.3-70b-versatile'),
+  CLAUDE_MODEL: z.string().default('llama-3.3-70b-versatile'),
   CLAUDE_MAX_TOKENS: z.string().default('4096').transform(Number),
 
   GOOGLE_CLIENT_ID: z.string().optional(),
@@ -71,9 +73,14 @@ export const config = {
   },
 
   anthropic: {
-    apiKey: parsed.data.ANTHROPIC_API_KEY,
+    apiKey: parsed.data.ANTHROPIC_API_KEY ?? '',
     model: parsed.data.CLAUDE_MODEL,
     maxTokens: parsed.data.CLAUDE_MAX_TOKENS,
+  },
+
+  groq: {
+    apiKey: parsed.data.GROQ_API_KEY,
+    model: parsed.data.GROQ_MODEL,
   },
 
   google: {

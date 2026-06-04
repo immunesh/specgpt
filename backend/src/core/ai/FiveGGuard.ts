@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk'
+import Groq from 'groq-sdk'
 import { config } from '@/config'
 import { logger } from '@/utils/logger'
 
@@ -6,7 +6,6 @@ export type GuardResult =
   | { allowed: true }
   | { allowed: false; reason: string }
 
-// Definitive 5G/telecom keyword set — if any match → allow immediately
 const ALLOW_KEYWORDS = new Set([
   '5g', 'nr', 'lte', '4g', 'ran', 'gNB', 'gnb', 'enb', 'amf', 'smf', 'upf',
   'nrf', 'ausf', 'udm', 'udr', 'pcf', 'nssf', 'sepp', 'scp', '5gc', 'epc',
@@ -31,7 +30,6 @@ const ALLOW_KEYWORDS = new Set([
   'positioning', 'location', 'nr positioning',
 ])
 
-// Hard-reject keywords — clearly off-topic (fast reject)
 const REJECT_KEYWORDS = new Set([
   'recipe', 'cooking', 'movie', 'film', 'sports', 'weather', 'joke',
   'poem', 'story', 'game', 'travel', 'fashion', 'relationship', 'dating',
@@ -39,58 +37,51 @@ const REJECT_KEYWORDS = new Set([
 ])
 
 export class FiveGGuard {
-  private client: Anthropic
+  private client: Groq
 
   constructor() {
-    this.client = new Anthropic({ apiKey: config.anthropic.apiKey })
+    this.client = new Groq({ apiKey: config.groq.apiKey })
   }
 
   async check(query: string): Promise<GuardResult> {
     const lower = query.toLowerCase()
     const words = lower.split(/\s+/)
 
-    // Fast-allow: contains a definitive 5G keyword
     if (words.some((w) => ALLOW_KEYWORDS.has(w)) ||
         Array.from(ALLOW_KEYWORDS).some((kw) => kw.includes(' ') && lower.includes(kw))) {
       return { allowed: true }
     }
 
-    // Fast-reject: contains a clear off-topic keyword
     if (words.some((w) => REJECT_KEYWORDS.has(w))) {
       return {
         allowed: false,
-        reason: 'I can only answer questions related to 5G telecommunications specifications and standards. Your question appears to be outside this domain.',
+        reason: 'I can only answer questions related to 5G telecommunications specifications and standards.',
       }
     }
 
-    // Ambiguous — use Claude Haiku for a fast, cheap classification
     return this.classifyWithAI(query)
   }
 
   private async classifyWithAI(query: string): Promise<GuardResult> {
     try {
-      const response = await this.client.messages.create({
-        model: 'claude-haiku-4-5-20251001', // Fast + cheap for classification
+      const response = await this.client.chat.completions.create({
+        model: 'llama-3.1-8b-instant',
         max_tokens: 10,
-        system: 'You are a classifier. Reply only "YES" if the question is about 5G telecommunications, wireless networks, 3GPP standards, O-RAN, or related telecom technology. Reply only "NO" otherwise.',
-        messages: [{ role: 'user', content: query }],
+        messages: [
+          { role: 'system', content: 'You are a classifier. Reply only "YES" if the question is about 5G telecommunications, wireless networks, 3GPP standards, O-RAN, or related telecom technology. Reply only "NO" otherwise.' },
+          { role: 'user', content: query },
+        ],
       })
 
-      const text = response.content[0].type === 'text'
-        ? response.content[0].text.trim().toUpperCase()
-        : 'NO'
+      const text = (response.choices[0]?.message?.content ?? 'NO').trim().toUpperCase()
 
-      if (text.startsWith('YES')) {
-        return { allowed: true }
-      }
+      if (text.startsWith('YES')) return { allowed: true }
 
-      logger.debug('5G guard rejected query via AI', { query: query.slice(0, 80) })
       return {
         allowed: false,
-        reason: 'I am specialized exclusively in 5G telecommunications specifications (3GPP, O-RAN, ETSI standards). Please ask a question related to 5G technology, network architecture, protocols, or specifications.',
+        reason: 'I am specialized exclusively in 5G telecommunications specifications. Please ask a 5G-related question.',
       }
     } catch (err) {
-      // On guard failure, allow through — better to answer than block
       logger.warn('5G guard AI check failed, allowing query', { error: (err as Error).message })
       return { allowed: true }
     }

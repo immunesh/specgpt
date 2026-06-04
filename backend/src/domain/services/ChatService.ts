@@ -222,6 +222,9 @@ export class ChatService {
 
   private writeSSE(res: Response, data: object): void {
     res.write(`data: ${JSON.stringify(data)}\n\n`)
+    if (typeof (res as Response & { flush?: () => void }).flush === 'function') {
+      (res as Response & { flush: () => void }).flush()
+    }
   }
 }
 

@@ -48,7 +48,12 @@ export function createApp(): Application {
   app.use(express.json({ limit: '10mb' }))
   app.use(express.urlencoded({ extended: true, limit: '10mb' }))
   app.use(cookieParser())
-  app.use(compression())
+  app.use(compression({
+    filter: (req, res) => {
+      if (res.getHeader('Content-Type') === 'text/event-stream') return false
+      return compression.filter(req, res)
+    },
+  }))
 
   // ── HTTP Logging ─────────────────────────────────────────────────
   app.use(

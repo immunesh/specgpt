@@ -1,16 +1,9 @@
-import Anthropic from '@anthropic-ai/sdk'
+import Groq from 'groq-sdk'
 import { config } from '@/config'
 import { logger } from '@/utils/logger'
 import { BuiltPrompt } from './PromptBuilder'
 import { SourceReference } from '@5g-specgpt/shared'
 import { Response } from 'express'
-
-export interface StreamCallbacks {
-  onStart?: () => void
-  onDelta: (text: string) => void
-  onEnd: (usage: { inputTokens: number; outputTokens: number }) => void
-  onError: (err: Error) => void
-}
 
 export interface ChatCompletionResult {
   content: string
@@ -20,36 +13,34 @@ export interface ChatCompletionResult {
 }
 
 export class ClaudeService {
-  private client: Anthropic
+  private client: Groq
 
   constructor() {
-    this.client = new Anthropic({ apiKey: config.anthropic.apiKey })
+    this.client = new Groq({ apiKey: config.groq.apiKey })
   }
 
-  // Non-streaming — returns complete response
   async complete(prompt: BuiltPrompt): Promise<ChatCompletionResult> {
     const start = Date.now()
 
-    const response = await this.client.messages.create({
-      model: config.anthropic.model,
+    const response = await this.client.chat.completions.create({
+      model: config.groq.model,
       max_tokens: config.anthropic.maxTokens,
-      system: prompt.system,
-      messages: prompt.messages,
+      messages: [
+        { role: 'system', content: prompt.system },
+        ...prompt.messages,
+      ],
     })
 
-    const content = response.content[0].type === 'text'
-      ? response.content[0].text
-      : ''
+    const content = response.choices[0]?.message?.content ?? ''
 
     return {
       content,
-      inputTokens: response.usage.input_tokens,
-      outputTokens: response.usage.output_tokens,
+      inputTokens: response.usage?.prompt_tokens ?? 0,
+      outputTokens: response.usage?.completion_tokens ?? 0,
       latencyMs: Date.now() - start,
     }
   }
 
-  // Streaming via Server-Sent Events to Express response
   async streamToSSE(
     prompt: BuiltPrompt,
     res: Response,
@@ -59,73 +50,54 @@ export class ClaudeService {
   ): Promise<{ content: string; inputTokens: number; outputTokens: number; latencyMs: number }> {
     const start = Date.now()
     let fullContent = ''
-    let inputTokens = 0
-    let outputTokens = 0
 
     try {
-      const stream = await this.client.messages.create({
-        model: config.anthropic.model,
+      this.writeSSE(res, { type: 'start', conversationId, messageId })
+
+      const stream = await this.client.chat.completions.create({
+        model: config.groq.model,
         max_tokens: config.anthropic.maxTokens,
-        system: prompt.system,
-        messages: prompt.messages,
+        messages: [
+          { role: 'system', content: prompt.system },
+          ...prompt.messages,
+        ],
         stream: true,
       })
 
-      // Send start event
-      this.writeSSE(res, {
-        type: 'start',
-        conversationId,
-        messageId,
-      })
-
-      for await (const event of stream) {
-        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-          const text = event.delta.text
+      for await (const chunk of stream) {
+        const text = chunk.choices[0]?.delta?.content ?? ''
+        if (text) {
           fullContent += text
           this.writeSSE(res, { type: 'delta', content: text })
         }
-
-        if (event.type === 'message_delta' && event.usage) {
-          outputTokens = event.usage.output_tokens
-        }
-
-        if (event.type === 'message_start' && event.message.usage) {
-          inputTokens = event.message.usage.input_tokens
-        }
       }
 
-      // Send sources after content is done
       if (sources.length > 0) {
         this.writeSSE(res, { type: 'sources', sources })
       }
 
-      // Send end event
-      this.writeSSE(res, {
-        type: 'end',
-        totalTokens: inputTokens + outputTokens,
-        latencyMs: Date.now() - start,
-      })
-
+      this.writeSSE(res, { type: 'end', totalTokens: 0, latencyMs: Date.now() - start })
       res.write('data: [DONE]\n\n')
       res.end()
 
-      return {
-        content: fullContent,
-        inputTokens,
-        outputTokens,
-        latencyMs: Date.now() - start,
+      return { content: fullContent, inputTokens: 0, outputTokens: 0, latencyMs: Date.now() - start }
+    } catch (err: unknown) {
+      logger.error('Groq streaming error', { error: (err as Error).message })
+      if (!res.headersSent) {
+        res.writeHead(200, { 'Content-Type': 'text/event-stream' })
       }
-    } catch (err: any) {
-      logger.error('Claude streaming error', { error: err.message })
       this.writeSSE(res, { type: 'error', error: 'AI service error. Please try again.' })
       res.write('data: [DONE]\n\n')
       res.end()
-      throw err
+      return { content: '', inputTokens: 0, outputTokens: 0, latencyMs: Date.now() - start }
     }
   }
 
   private writeSSE(res: Response, data: object): void {
     res.write(`data: ${JSON.stringify(data)}\n\n`)
+    if (typeof (res as Response & { flush?: () => void }).flush === 'function') {
+      (res as Response & { flush: () => void }).flush()
+    }
   }
 }
 
