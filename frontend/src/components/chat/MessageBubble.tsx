@@ -1,4 +1,5 @@
 'use client'
+import React from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
@@ -82,11 +83,10 @@ export function MessageBubble({ message, isStreaming }: Props) {
                             <CopyButton text={code} />
                           </div>
                           <SyntaxHighlighter
-                            style={oneDark}
+                            style={oneDark as unknown as { [key: string]: React.CSSProperties }}
                             language={match[1]}
                             PreTag="div"
                             customStyle={{ margin: 0, borderRadius: 0, fontSize: '0.75rem' }}
-                            {...props}
                           >
                             {code}
                           </SyntaxHighlighter>
