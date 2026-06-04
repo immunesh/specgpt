@@ -19,7 +19,7 @@ function fileFilter(
   file: Express.Multer.File,
   cb: multer.FileFilterCallback,
 ): void {
-  if (config.upload.allowedMimeTypes.includes(file.mimetype)) {
+  if ((config.upload.allowedMimeTypes as readonly string[]).includes(file.mimetype)) {
     cb(null, true)
   } else {
     cb(new ValidationError('Only PDF files are allowed'))

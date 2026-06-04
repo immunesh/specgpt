@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken'
+import jwt, { type SignOptions } from 'jsonwebtoken'
 import crypto from 'crypto'
 import { config } from '@/config'
 import { AuthenticationError } from '@/utils/errors'
@@ -21,7 +21,7 @@ export class JwtService {
     return jwt.sign(
       { ...payload, type: 'access' },
       config.jwt.secret,
-      { expiresIn: config.jwt.expiresIn, algorithm: 'HS256' },
+      { expiresIn: config.jwt.expiresIn as SignOptions['expiresIn'], algorithm: 'HS256' },
     )
   }
 
@@ -30,7 +30,7 @@ export class JwtService {
     const token = jwt.sign(
       { sub: userId, jti, type: 'refresh' },
       config.jwt.refreshSecret,
-      { expiresIn: config.jwt.refreshExpiresIn, algorithm: 'HS256' },
+      { expiresIn: config.jwt.refreshExpiresIn as SignOptions['expiresIn'], algorithm: 'HS256' },
     )
     return { token, jti }
   }

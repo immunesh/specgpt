@@ -10,7 +10,7 @@ export interface CreateUserDto {
 
 export interface UpdateUserDto {
   name?: string
-  avatar?: string
+  avatar?: string | null
   role?: UserRole
   isActive?: boolean
   emailVerified?: boolean
