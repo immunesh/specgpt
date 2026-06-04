@@ -16,7 +16,9 @@ export class AnalyticsRepository implements IAnalyticsRepository {
       activeUsers,
       totalConversations,
       totalMessages,
-      docStats,
+      totalDocuments,
+      readyDocuments,
+      totalChunks,
       tokenStats,
       latencyStats,
     ] = await prisma.$transaction([
@@ -24,19 +26,12 @@ export class AnalyticsRepository implements IAnalyticsRepository {
       prisma.user.count({ where: { lastActiveAt: { gte: thirtyDaysAgo } } }),
       prisma.conversation.count(),
       prisma.message.count(),
-      prisma.document.groupBy({
-        by: ['status'],
-        _count: { status: true },
-        _sum: { chunkCount: true },
-      }),
+      prisma.document.count(),
+      prisma.document.count({ where: { status: 'READY' } }),
+      prisma.documentChunk.count(),
       prisma.apiUsage.aggregate({ _sum: { totalTokens: true } }),
       prisma.apiUsage.aggregate({ _avg: { latencyMs: true } }),
     ])
-
-    const totalDocuments = docStats.reduce((sum, d) => sum + d._count.status, 0)
-    const readyDoc = docStats.find((d) => d.status === 'READY')
-    const readyDocuments = readyDoc?._count.status ?? 0
-    const totalChunks = docStats.reduce((sum, d) => sum + (d._sum.chunkCount ?? 0), 0)
 
     return {
       totalUsers,

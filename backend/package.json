@@ -20,6 +20,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@5g-specgpt/shared": "*",
     "@anthropic-ai/sdk": "^0.36.3",
     "@prisma/client": "^5.22.0",
     "bcryptjs": "^2.4.3",

@@ -30,7 +30,7 @@ export class AdminController {
 
   async updateUser(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = req.params
+      const id = req.params['id'] as string
       const body = req.body as UpdateUserInput
 
       // Super admin protection: only SUPER_ADMIN can promote to SUPER_ADMIN
@@ -59,7 +59,7 @@ export class AdminController {
 
   async deleteUser(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = req.params
+      const id = req.params['id'] as string
       if (id === req.user!.id) throw new AuthorizationError('Cannot delete your own account')
       const target = await userRepository.findById(id)
       if (!target) throw new NotFoundError('User')
@@ -87,7 +87,7 @@ export class AdminController {
 
   async getDailyUsage(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const days = Math.min(Number(req.query.days) || 30, 90)
+      const days = Math.min(Number(String(req.query['days'])) || 30, 90)
       const data = await analyticsRepository.getDailyUsage(days)
       res.json({ success: true, data })
     } catch (err) { next(err) }
@@ -95,7 +95,7 @@ export class AdminController {
 
   async getTopUsers(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const limit = Math.min(Number(req.query.limit) || 10, 50)
+      const limit = Math.min(Number(String(req.query['limit'])) || 10, 50)
       const data = await analyticsRepository.getTopUsers(limit)
       res.json({ success: true, data })
     } catch (err) { next(err) }

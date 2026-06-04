@@ -1,4 +1,4 @@
-import { UserRole } from '@5g-specgpt/shared'
+import { UserRole } from '@prisma/client'
 
 declare global {
   namespace Express {

@@ -57,9 +57,10 @@ export class ChatController {
   // GET /conversations/:id/messages
   async getMessages(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const limit = Number(req.query.limit) || 50
+      const id = req.params['id'] as string
+      const limit = Number(String(req.query['limit'])) || 50
       const messages = await conversationService.getMessages(
-        req.params.id,
+        id,
         req.user!.id,
         Math.min(limit, 200),
       )
@@ -73,7 +74,7 @@ export class ChatController {
   async updateConversation(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const body = req.body as UpdateConversationInput
-      const { id } = req.params
+      const id = req.params['id'] as string
       const userId = req.user!.id
 
       if (body.title !== undefined) {
@@ -92,7 +93,8 @@ export class ChatController {
   // POST /conversations/:id/archive
   async archiveConversation(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      await conversationService.archive(req.params.id, req.user!.id)
+      const id = req.params['id'] as string
+      await conversationService.archive(id, req.user!.id)
       res.json({ success: true, message: 'Conversation archived' })
     } catch (err) {
       next(err)
@@ -102,7 +104,8 @@ export class ChatController {
   // DELETE /conversations/:id
   async deleteConversation(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      await conversationService.delete(req.params.id, req.user!.id)
+      const id = req.params['id'] as string
+      await conversationService.delete(id, req.user!.id)
       res.json({ success: true, message: 'Conversation deleted' })
     } catch (err) {
       next(err)
@@ -112,9 +115,10 @@ export class ChatController {
   // GET /conversations/:id/export
   async exportConversation(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const markdown = await conversationService.export(req.params.id, req.user!.id)
+      const id = req.params['id'] as string
+      const markdown = await conversationService.export(id, req.user!.id)
       res.setHeader('Content-Type', 'text/markdown; charset=utf-8')
-      res.setHeader('Content-Disposition', `attachment; filename="conversation-${req.params.id}.md"`)
+      res.setHeader('Content-Disposition', `attachment; filename="conversation-${id}.md"`)
       res.send(markdown)
     } catch (err) {
       next(err)

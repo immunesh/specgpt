@@ -59,7 +59,8 @@ export class DocumentController {
 
   async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const doc = await documentService.getById(req.params.id)
+      const id = req.params['id'] as string
+      const doc = await documentService.getById(id)
       res.json({ success: true, data: doc })
     } catch (err) {
       next(err)
@@ -68,7 +69,8 @@ export class DocumentController {
 
   async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      await documentService.delete(req.params.id)
+      const id = req.params['id'] as string
+      await documentService.delete(id)
       res.json({ success: true, message: 'Document deleted' })
     } catch (err) {
       next(err)
@@ -77,7 +79,8 @@ export class DocumentController {
 
   async reprocess(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const doc = await documentService.reprocess(req.params.id, req.user!.id)
+      const id = req.params['id'] as string
+      const doc = await documentService.reprocess(id, req.user!.id)
       res.json({
         success: true,
         message: 'Document requeued for processing',
@@ -90,7 +93,8 @@ export class DocumentController {
 
   async getJobStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const status = await documentService.getJobStatus(req.params.id)
+      const id = req.params['id'] as string
+      const status = await documentService.getJobStatus(id)
       res.json({ success: true, data: status })
     } catch (err) {
       next(err)
