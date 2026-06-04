@@ -15,7 +15,7 @@ interface Props {
   onNewChat: () => void
 }
 
-export function ChatHeader({ conversation, onNewChat }: Props) {
+export function ChatHeader({ conversation, onNewChat: _onNewChat }: Props) {
   const { deleteConversation, renameConversation, pinConversation, archiveConversation, exportConversation } = useConversations()
   const [renaming, setRenaming] = useState(false)
   const [title, setTitle] = useState('')

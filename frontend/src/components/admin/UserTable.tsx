@@ -12,9 +12,12 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import type { AxiosError } from 'axios'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { adminApi } from '@/lib/api/admin'
 import { User } from '@/types'
+
+type UserRow = User & { isActive?: boolean }
 import { useAuthStore } from '@/store/authStore'
 import { cn } from '@/lib/utils/cn'
 
@@ -46,7 +49,7 @@ export function UserTable() {
       qc.invalidateQueries({ queryKey: ['admin-users'] })
       toast.success('User updated')
     },
-    onError: (e: any) => toast.error(e?.response?.data?.error ?? 'Update failed'),
+    onError: (e: AxiosError<{ error?: string }>) => toast.error(e?.response?.data?.error ?? 'Update failed'),
   })
 
   const deleteMutation = useMutation({
@@ -55,10 +58,10 @@ export function UserTable() {
       qc.invalidateQueries({ queryKey: ['admin-users'] })
       toast.success('User deleted')
     },
-    onError: (e: any) => toast.error(e?.response?.data?.error ?? 'Delete failed'),
+    onError: (e: AxiosError<{ error?: string }>) => toast.error(e?.response?.data?.error ?? 'Delete failed'),
   })
 
-  const users: User[] = data?.users ?? []
+  const users: UserRow[] = (data?.users ?? []) as UserRow[]
   const meta = data?.meta
   const totalPages = meta?.totalPages ?? 1
 
@@ -113,8 +116,8 @@ export function UserTable() {
                       </Badge>
                     </td>
                     <td className="px-4 py-3">
-                      <Badge variant={(user as any).isActive !== false ? 'success' : 'secondary'} className="text-[10px]">
-                        {(user as any).isActive !== false ? 'Active' : 'Inactive'}
+                      <Badge variant={user.isActive !== false ? 'success' : 'secondary'} className="text-[10px]">
+                        {user.isActive !== false ? 'Active' : 'Inactive'}
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
@@ -142,9 +145,9 @@ export function UserTable() {
                                 <ShieldOff className="h-3.5 w-3.5" />Remove Admin
                               </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem onClick={() => updateMutation.mutate({ id: user.id, isActive: !(user as any).isActive })}>
+                            <DropdownMenuItem onClick={() => updateMutation.mutate({ id: user.id, isActive: !user.isActive })}>
                               <UserCog className="h-3.5 w-3.5" />
-                              {(user as any).isActive !== false ? 'Deactivate' : 'Activate'}
+                              {user.isActive !== false ? 'Deactivate' : 'Activate'}
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem

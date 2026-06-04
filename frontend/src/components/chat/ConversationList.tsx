@@ -8,7 +8,6 @@ import { useChatStore } from '@/store/chatStore'
 import { useConversations } from '@/hooks/useConversations'
 import { cn } from '@/lib/utils/cn'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -25,7 +24,7 @@ interface Props {
 export function ConversationList({ showSearch = true }: Props) {
   const pathname = usePathname()
   const [search, setSearch] = useState('')
-  const { conversations, isLoading: storeLoading } = useChatStore()
+  const { conversations } = useChatStore()
   const { isLoading, deleteConversation, pinConversation, archiveConversation, exportConversation } = useConversations()
 
   const filtered = conversations.filter((c) =>

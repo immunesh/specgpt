@@ -1,8 +1,7 @@
 'use client'
 import { useState } from 'react'
-import { ChevronDown, ChevronUp, BookOpen, ExternalLink } from 'lucide-react'
+import { ChevronDown, ChevronUp, BookOpen } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils/cn'
 import { SourceReference } from '@/types'
 
 interface Props {

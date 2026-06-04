@@ -49,7 +49,6 @@ export function useStreamChat() {
         let finalConversationId = conversationId ?? null
         let buffer = ''
 
-        // eslint-disable-next-line no-constant-condition
         while (true) {
           const { done, value } = await reader.read()
           if (done) break
@@ -98,21 +97,22 @@ export function useStreamChat() {
                 case 'error':
                   throw new Error(event.error ?? 'Stream error')
               }
-            } catch (parseErr) {
+            } catch {
               // Skip malformed SSE lines
             }
           }
         }
 
         return finalConversationId
-      } catch (err: any) {
-        if (err.name === 'AbortError') {
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error('Failed to send message')
+        if (error.name === 'AbortError') {
           store.abortStreaming()
           return conversationId ?? null
         }
 
         store.abortStreaming()
-        store.setError(err.message ?? 'Failed to send message')
+        store.setError(error.message)
         return conversationId ?? null
       }
     },

@@ -39,7 +39,7 @@ apiClient.interceptors.response.use(
 
       if (isRefreshing) {
         // Queue this request until refresh completes
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
           refreshQueue.push((token) => {
             original.headers.Authorization = `Bearer ${token}`
             resolve(apiClient(original))

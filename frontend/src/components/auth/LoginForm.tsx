@@ -39,8 +39,8 @@ export function LoginForm() {
       setAuth(user, accessToken)
       toast.success(`Welcome back, ${user.name}!`)
       router.push('/chat')
-    } catch (err: any) {
-      const msg = err?.response?.data?.error ?? 'Login failed. Please try again.'
+    } catch (err) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Login failed. Please try again.'
       toast.error(msg)
     }
   }

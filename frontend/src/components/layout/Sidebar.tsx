@@ -4,14 +4,12 @@ import { usePathname, useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import {
   MessageSquare, History, Search, Settings, Shield,
-  LogOut, BarChart3, Users, FileText, ChevronRight, Plus,
+  LogOut, BarChart3, Users, FileText, Plus,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
 import { ThemeToggle } from './ThemeToggle'
 import { useAuthStore } from '@/store/authStore'
 

@@ -13,7 +13,6 @@ import { useStreamChat } from '@/hooks/useStreamChat'
 import { useConversations } from '@/hooks/useConversations'
 import { chatApi } from '@/lib/api/chat'
 import { Conversation } from '@/types'
-import toast from 'react-hot-toast'
 
 interface Props {
   conversationId?: string

@@ -1,14 +1,10 @@
 'use client'
 import { useQuery } from '@tanstack/react-query'
-import {
-  Users, MessageSquare, FileText, Cpu, BarChart3, Activity, Layers, Clock,
-} from 'lucide-react'
+import { Users, MessageSquare, FileText, Cpu } from 'lucide-react'
 import { StatsCard } from '@/components/admin/StatsCard'
 import { MessagesChart, TokensChart, UsersChart } from '@/components/admin/UsageChart'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { adminApi } from '@/lib/api/admin'
-import { format } from 'date-fns'
 
 function formatNum(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`

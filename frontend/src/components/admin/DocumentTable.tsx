@@ -11,6 +11,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import type { AxiosError } from 'axios'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { adminApi } from '@/lib/api/admin'
 import { Document } from '@/types'
@@ -43,13 +44,13 @@ export function DocumentTable() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => adminApi.deleteDocument(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-documents'] }); toast.success('Document deleted') },
-    onError: (e: any) => toast.error(e?.response?.data?.error ?? 'Delete failed'),
+    onError: (e: AxiosError<{ error?: string }>) => toast.error(e?.response?.data?.error ?? 'Delete failed'),
   })
 
   const reprocessMutation = useMutation({
     mutationFn: (id: string) => adminApi.reprocessDocument(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-documents'] }); toast.success('Reprocessing queued') },
-    onError: (e: any) => toast.error(e?.response?.data?.error ?? 'Reprocess failed'),
+    onError: (e: AxiosError<{ error?: string }>) => toast.error(e?.response?.data?.error ?? 'Reprocess failed'),
   })
 
   const documents: Document[] = data ?? []

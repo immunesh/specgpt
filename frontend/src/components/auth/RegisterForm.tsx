@@ -61,8 +61,8 @@ export function RegisterForm() {
       setAuth(user, accessToken)
       toast.success('Account created successfully!')
       router.push('/chat')
-    } catch (err: any) {
-      const msg = err?.response?.data?.error ?? 'Registration failed. Please try again.'
+    } catch (err) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Registration failed. Please try again.'
       toast.error(msg)
     }
   }

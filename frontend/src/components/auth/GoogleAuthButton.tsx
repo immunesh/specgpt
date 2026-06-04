@@ -1,10 +1,8 @@
 'use client'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { Button } from '@/components/ui/button'
 import { authApi } from '@/lib/api/auth'
-import { useAuthStore } from '@/store/authStore'
 
 interface Props {
   label?: string
@@ -12,8 +10,6 @@ interface Props {
 
 export function GoogleAuthButton({ label = 'Continue with Google' }: Props) {
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
-  const setAuth = useAuthStore((s) => s.setAuth)
 
   const handleGoogleLogin = async () => {
     setLoading(true)
@@ -23,7 +19,7 @@ export function GoogleAuthButton({ label = 'Continue with Google' }: Props) {
       const { url } = res.data.data!
       // Redirect to Google consent page
       window.location.href = url
-    } catch (err: any) {
+    } catch {
       toast.error('Google authentication unavailable. Please use email login.')
       setLoading(false)
     }

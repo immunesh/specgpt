@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTheme } from 'next-themes'
-import { User, Lock, Palette, Bell, Shield } from 'lucide-react'
+import { User, Lock, Palette, Shield } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -144,9 +144,9 @@ export default function SettingsPage() {
                       {['currentPassword', 'newPassword', 'confirmPassword'].map((field) => (
                         <div key={field} className="space-y-1.5">
                           <Label>{field === 'currentPassword' ? 'Current Password' : field === 'newPassword' ? 'New Password' : 'Confirm New Password'}</Label>
-                          <Input type="password" {...passwordForm.register(field as any)} />
+                          <Input type="password" {...passwordForm.register(field as keyof PasswordForm)} />
                           {passwordForm.formState.errors[field as keyof PasswordForm] && (
-                            <p className="text-xs text-destructive">{(passwordForm.formState.errors[field as keyof PasswordForm] as any)?.message}</p>
+                            <p className="text-xs text-destructive">{(passwordForm.formState.errors[field as keyof PasswordForm] as { message?: string })?.message}</p>
                           )}
                         </div>
                       ))}

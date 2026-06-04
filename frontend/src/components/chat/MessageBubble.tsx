@@ -70,7 +70,7 @@ export function MessageBubble({ message, isStreaming }: Props) {
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
-                  code({ node, className, children, ...props }) {
+                  code({ node: _node, className, children, ...props }) {
                     const inline = !className
                     const match = /language-(\w+)/.exec(className ?? '')
                     const code = String(children).replace(/\n$/, '')

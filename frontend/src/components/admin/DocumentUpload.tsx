@@ -2,11 +2,11 @@
 import { useRef, useState, DragEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { Upload, FileText, X, CheckCircle2, AlertCircle } from 'lucide-react'
+import type { AxiosError } from 'axios'
+import { Upload, FileText, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
 import { adminApi } from '@/lib/api/admin'
 import { cn } from '@/lib/utils/cn'
 
@@ -34,7 +34,7 @@ export function DocumentUpload() {
       setSpecTitle('')
       qc.invalidateQueries({ queryKey: ['admin-documents'] })
     },
-    onError: (e: any) => toast.error(e?.response?.data?.error ?? 'Upload failed'),
+    onError: (e: AxiosError<{ error?: string }>) => toast.error(e?.response?.data?.error ?? 'Upload failed'),
   })
 
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
