@@ -2,7 +2,7 @@
 
 > AI-powered assistant for 5G telecommunications specifications — 3GPP, O-RAN, ETSI standards.
 
-## Architecture
+## Architectures
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
@@ -262,3 +262,8 @@ GitHub Actions pipeline (`.github/workflows/ci.yml`):
 ## License
 
 MIT
+# sujoy: 
+# https://console.groq.com/dashboard/metrics
+# Admin
+ **- admin@5gspecgpt.com -**
+ **- Admin@SpecGPT2024! -**

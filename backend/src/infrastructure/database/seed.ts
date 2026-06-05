@@ -142,23 +142,18 @@ async function main() {
   ]
 
   for (const spec of specCatalog) {
-    await prisma.document.upsert({
-      where: {
-        id: (
-          await prisma.document
-            .findFirst({ where: { specNumber: spec.specNumber } })
-            .then((d) => d?.id ?? 'nonexistent-id-placeholder')
-        ),
-      },
-      update: {},
-      create: {
-        ...spec,
-        fileSize: 0n,
-        mimeType: 'application/pdf',
-        status: DocumentStatus.PENDING,
-        uploadedBy: admin.id,
-      },
-    })
+    const existing = await prisma.document.findFirst({ where: { specNumber: spec.specNumber } })
+    if (!existing) {
+      await prisma.document.create({
+        data: {
+          ...spec,
+          fileSize: 0n,
+          mimeType: 'application/pdf',
+          status: DocumentStatus.PENDING,
+          uploadedBy: admin.id,
+        },
+      })
+    }
   }
   console.log(`Seeded ${specCatalog.length} 5G specification records`)
 

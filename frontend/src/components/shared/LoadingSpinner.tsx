@@ -5,18 +5,34 @@ interface Props {
   className?: string
 }
 
-const sizes = { sm: 'h-4 w-4', md: 'h-6 w-6', lg: 'h-10 w-10' }
+const sizes = { sm: 16, md: 24, lg: 40 }
 
 export function LoadingSpinner({ size = 'md', className }: Props) {
+  const s = sizes[size]
   return (
     <svg
-      className={cn('animate-spin text-primary', sizes[size], className)}
-      fill="none"
+      width={s}
+      height={s}
       viewBox="0 0 24 24"
+      fill="none"
+      className={cn('animate-spin', className)}
       aria-label="Loading"
     >
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+      {/* Track */}
+      <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.08)" strokeWidth="2.5" />
+      {/* Arc */}
+      <path
+        d="M12 2a10 10 0 0 1 10 10"
+        stroke="url(#spinGrad)"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+      <defs>
+        <linearGradient id="spinGrad" x1="12" y1="2" x2="22" y2="12" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#00AEEF" />
+          <stop offset="1" stopColor="#7C3AED" />
+        </linearGradient>
+      </defs>
     </svg>
   )
 }

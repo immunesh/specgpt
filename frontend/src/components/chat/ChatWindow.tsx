@@ -13,6 +13,7 @@ import { useStreamChat } from '@/hooks/useStreamChat'
 import { useConversations } from '@/hooks/useConversations'
 import { chatApi } from '@/lib/api/chat'
 import { Conversation } from '@/types'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface Props {
   conversationId?: string
@@ -30,7 +31,6 @@ export function ChatWindow({ conversationId }: Props) {
     setActiveConversation, setMessages, setLoading, conversations, error,
   } = useChatStore()
 
-  // Load messages when conversationId changes
   const { isLoading } = useQuery({
     queryKey: ['messages', conversationId],
     queryFn: async () => {
@@ -51,7 +51,6 @@ export function ChatWindow({ conversationId }: Props) {
     staleTime: 0,
   })
 
-  // Auto-scroll on new content
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, streamingMessage?.content])
@@ -62,8 +61,6 @@ export function ChatWindow({ conversationId }: Props) {
     setInput('')
 
     const newConvId = await sendMessage(text, activeConversationId ?? undefined)
-
-    // If this was a new conversation, update URL and refresh list
     if (!activeConversationId && newConvId) {
       router.replace(`/chat/${newConvId}`, { scroll: false })
       refetchConversations()
@@ -76,42 +73,72 @@ export function ChatWindow({ conversationId }: Props) {
   const isEmpty = messages.length === 0 && !streamingMessage && !isLoading
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full" style={{ background: 'linear-gradient(180deg, #070D1C 0%, #080F1E 100%)' }}>
       <ChatHeader conversation={activeConversation} onNewChat={() => router.push('/chat')} />
 
       <div className="flex-1 overflow-hidden relative">
-        {isEmpty ? (
-          <EmptyChat onSelectPrompt={(p) => { setInput(p) }} />
-        ) : (
-          <ScrollArea className="h-full">
-            <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
-              {messages.map((msg) => (
-                <MessageBubble key={msg.id} message={msg} />
-              ))}
+        <AnimatePresence mode="wait">
+          {isEmpty ? (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="h-full flex flex-col"
+            >
+              <EmptyChat onSelectPrompt={(p) => { setInput(p) }} />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="messages"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="h-full"
+            >
+              <ScrollArea className="h-full">
+                <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+                  {messages.map((msg) => (
+                    <MessageBubble key={msg.id} message={msg} />
+                  ))}
 
-              {/* Streaming message */}
-              {streamingMessage && (
-                streamingMessage.content
-                  ? <StreamingBubble content={streamingMessage.content} />
-                  : <TypingIndicator />
-              )}
+                  {streamingMessage && (
+                    streamingMessage.content
+                      ? <StreamingBubble content={streamingMessage.content} />
+                      : <TypingIndicator />
+                  )}
 
-              {error && (
-                <div className="text-center">
-                  <p className="text-xs text-destructive bg-destructive/10 rounded-lg px-4 py-2 inline-block">
-                    {error}
-                  </p>
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="text-center"
+                    >
+                      <p
+                        className="text-xs rounded-xl px-4 py-2 inline-block"
+                        style={{
+                          color: '#F87171',
+                          background: 'rgba(239,68,68,0.1)',
+                          border: '1px solid rgba(239,68,68,0.2)',
+                        }}
+                      >
+                        {error}
+                      </p>
+                    </motion.div>
+                  )}
+
+                  <div ref={bottomRef} />
                 </div>
-              )}
-
-              <div ref={bottomRef} />
-            </div>
-          </ScrollArea>
-        )}
+              </ScrollArea>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Input */}
-      <div className="border-t border-border px-4 py-4 bg-background flex-shrink-0">
+      {/* Input area */}
+      <div
+        className="px-4 py-4 flex-shrink-0"
+        style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+      >
         <div className="max-w-3xl mx-auto">
           <MessageInput
             value={input}
@@ -120,7 +147,10 @@ export function ChatWindow({ conversationId }: Props) {
             onAbort={abort}
             isStreaming={isSending}
           />
-          <p className="text-[10px] text-muted-foreground text-center mt-2">
+          <p
+            className="text-[10px] text-center mt-2"
+            style={{ color: 'rgba(255,255,255,0.2)' }}
+          >
             5G SpecGPT answers 5G/3GPP questions only · Always verify specs with official 3GPP documents
           </p>
         </div>

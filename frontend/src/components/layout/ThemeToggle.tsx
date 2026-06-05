@@ -1,20 +1,35 @@
 'use client'
 import { useTheme } from 'next-themes'
 import { Moon, Sun } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { motion } from 'framer-motion'
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme()
+  const isDark = theme === 'dark'
 
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+    <motion.button
+      whileHover={{ scale: 1.1 }}
+      whileTap={{ scale: 0.9 }}
+      onClick={() => setTheme(isDark ? 'light' : 'dark')}
       aria-label="Toggle theme"
+      className="h-7 w-7 rounded-lg flex items-center justify-center transition-all relative overflow-hidden"
+      style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
     >
-      <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-      <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-    </Button>
+      <motion.div
+        animate={{ rotate: isDark ? 0 : 180, opacity: isDark ? 1 : 0, scale: isDark ? 1 : 0 }}
+        transition={{ duration: 0.3 }}
+        className="absolute"
+      >
+        <Moon className="h-3.5 w-3.5" style={{ color: '#5BB8D4' }} />
+      </motion.div>
+      <motion.div
+        animate={{ rotate: isDark ? -180 : 0, opacity: isDark ? 0 : 1, scale: isDark ? 0 : 1 }}
+        transition={{ duration: 0.3 }}
+        className="absolute"
+      >
+        <Sun className="h-3.5 w-3.5" style={{ color: '#F59E0B' }} />
+      </motion.div>
+    </motion.button>
   )
 }
