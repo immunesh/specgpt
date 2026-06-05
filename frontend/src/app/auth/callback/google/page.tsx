@@ -1,12 +1,12 @@
 'use client'
-import { useEffect, useRef } from 'react'
+import { Suspense, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { authApi } from '@/lib/api/auth'
 import { useAuthStore } from '@/store/authStore'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 
-export default function GoogleCallbackPage() {
+function GoogleCallbackContent() {
   const router = useRouter()
   const params = useSearchParams()
   const setAuth = useAuthStore((s) => s.setAuth)
@@ -46,5 +46,18 @@ export default function GoogleCallbackPage() {
       <LoadingSpinner size="lg" />
       <p className="text-muted-foreground text-sm">Completing sign-in with Google…</p>
     </div>
+  )
+}
+
+export default function GoogleCallbackPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        <LoadingSpinner size="lg" />
+        <p className="text-muted-foreground text-sm">Completing sign-in with Google…</p>
+      </div>
+    }>
+      <GoogleCallbackContent />
+    </Suspense>
   )
 }
