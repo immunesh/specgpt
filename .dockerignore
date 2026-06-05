@@ -1,0 +1,15 @@
+**/node_modules
+**/.next
+**/dist
+**/.env
+**/.env.*
+**/coverage
+**/*.test.ts
+**/*.spec.ts
+**/*.test.tsx
+**/*.spec.tsx
+**/README.md
+backend/uploads
+backend/logs
+.git
+.github
