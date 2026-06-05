@@ -1,18 +1,14 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest'
 
-// Stub env before imports
-process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test'
-process.env.JWT_SECRET = 'test_jwt_secret_that_is_at_least_32_characters_long'
-process.env.JWT_REFRESH_SECRET = 'test_refresh_secret_that_is_at_least_32_chars'
-process.env.ANTHROPIC_API_KEY = 'test-key'
-
-// Mock Anthropic SDK so tests don't make real API calls
-vi.mock('@anthropic-ai/sdk', () => ({
+// Mock Groq SDK so tests don't make real API calls
+vi.mock('groq-sdk', () => ({
   default: class {
-    messages = {
-      create: vi.fn().mockResolvedValue({
-        content: [{ type: 'text', text: 'YES' }],
-      }),
+    chat = {
+      completions: {
+        create: vi.fn().mockResolvedValue({
+          choices: [{ message: { content: 'YES' } }],
+        }),
+      },
     }
   },
 }))
