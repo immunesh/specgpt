@@ -17,7 +17,7 @@ const envSchema = z.object({
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
 
   ANTHROPIC_API_KEY: z.string().optional(),
-  GROQ_API_KEY: z.string().min(1, 'GROQ_API_KEY is required'),
+  GROQ_API_KEY: z.string().optional(),
   GROQ_MODEL: z.string().default('llama-3.3-70b-versatile'),
   CLAUDE_MODEL: z.string().default('llama-3.3-70b-versatile'),
   CLAUDE_MAX_TOKENS: z.string().default('4096').transform(Number),
@@ -79,7 +79,7 @@ export const config = {
   },
 
   groq: {
-    apiKey: parsed.data.GROQ_API_KEY,
+    apiKey: parsed.data.GROQ_API_KEY ?? '',
     model: parsed.data.GROQ_MODEL,
   },
 
