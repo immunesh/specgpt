@@ -44,7 +44,7 @@ COPY shared/package.json ./shared/
 COPY backend/prisma ./backend/prisma/
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=builder /app/backend/dist /app/backend/dist
-COPY --from=builder /app/backend/node_modules/.prisma /app/backend/node_modules/.prisma
+COPY --from=builder /app/node_modules/.prisma /app/node_modules/.prisma
 RUN mkdir -p /app/backend/uploads
 WORKDIR /app/backend
 EXPOSE 4000
