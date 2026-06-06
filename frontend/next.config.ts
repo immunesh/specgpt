@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   serverExternalPackages: [],
   images: {
     domains: ['lh3.googleusercontent.com', 'avatars.githubusercontent.com'],

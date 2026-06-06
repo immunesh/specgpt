@@ -1,0 +1,6 @@
+[build]
+buildCommand = "npx prisma generate && npm run build"
+
+[deploy]
+startCommand = "node dist/server.js"
+healthcheckPath = "/health"
