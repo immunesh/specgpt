@@ -149,7 +149,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./backend/Dockerfile
+          file: ./docker/backend.Dockerfile
           target: production
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend:latest
@@ -160,7 +160,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./frontend/Dockerfile
+          file: ./docker/frontend.Dockerfile
           target: production
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:latest
