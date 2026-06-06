@@ -9,7 +9,7 @@ import { config } from '@/config'
 import { logger } from '@/utils/logger'
 import { NotFoundError } from '@/utils/errors'
 import { Message } from '@prisma/client'
-import { SourceReference } from '@5g-specgpt/shared'
+import { SourceReference } from '@/types/shared'
 
 export interface ChatInput {
   userId: string

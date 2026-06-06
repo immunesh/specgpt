@@ -1,6 +1,6 @@
 import { embeddingService } from '@/infrastructure/vector-store/EmbeddingService'
 import { documentRepository } from '@/core/container'
-import { SourceReference } from '@5g-specgpt/shared'
+import { SourceReference } from '@/types/shared'
 import { logger } from '@/utils/logger'
 
 export interface RetrievedContext {

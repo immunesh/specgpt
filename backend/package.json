@@ -30,8 +30,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@5g-specgpt/shared": "*",
-    "@anthropic-ai/sdk": "^0.36.3",
+"@anthropic-ai/sdk": "^0.36.3",
     "@google/genai": "^2.8.0",
     "@google/generative-ai": "^0.24.1",
     "@prisma/client": "^5.22.0",

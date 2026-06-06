@@ -2,7 +2,7 @@ import Groq from 'groq-sdk'
 import { config } from '@/config'
 import { logger } from '@/utils/logger'
 import { BuiltPrompt } from './PromptBuilder'
-import { SourceReference } from '@5g-specgpt/shared'
+import { SourceReference } from '@/types/shared'
 import { Response } from 'express'
 
 export interface ChatCompletionResult {
