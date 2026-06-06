@@ -15,6 +15,9 @@ import { globalRateLimiter } from './api/middleware/rateLimiter'
 export function createApp(): Application {
   const app = express()
 
+  // Trust Railway/cloud reverse proxy so rate-limiter reads correct client IP
+  app.set('trust proxy', 1)
+
   // ── Security Headers ─────────────────────────────────────────────
   app.use(
     helmet({
