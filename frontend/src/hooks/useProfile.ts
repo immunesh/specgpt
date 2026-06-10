@@ -29,7 +29,7 @@ export function useProfile() {
       toast.success('Password updated. Please log in again.')
       await authApi.logoutAll()
       useAuthStore.getState().clearAuth()
-      window.location.href = '/login'
+      window.location.href = '/'
     },
     onError: (e: AxiosError<{ error?: string }>) => toast.error(e?.response?.data?.error ?? 'Password change failed'),
   })

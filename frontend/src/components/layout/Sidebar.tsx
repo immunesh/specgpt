@@ -23,6 +23,7 @@ const navItems = [
 ]
 
 const adminItems = [
+  { href: '/admin',           label: 'Overview',  icon: Shield,    color: '#00AEEF' },
   { href: '/admin/users',     label: 'Users',     icon: Users,     color: '#10B981' },
   { href: '/admin/analytics', label: 'Analytics', icon: BarChart3, color: '#F59E0B' },
   { href: '/admin/documents', label: 'Documents', icon: FileText,  color: '#EC4899' },
@@ -37,7 +38,7 @@ export function Sidebar() {
   const handleLogout = async () => {
     await logout()
     toast.success('Signed out')
-    router.push('/login')
+    router.push('/')
   }
 
   const initials = user?.name
@@ -181,7 +182,7 @@ export function Sidebar() {
             </div>
             <nav className="space-y-0.5">
               {adminItems.map(({ href, label, icon: Icon, color }) => {
-                const active = pathname.startsWith(href)
+                const active = href === '/admin' ? pathname === '/admin' : pathname.startsWith(href)
                 return (
                   <Link key={href} href={href}>
                     <motion.div

@@ -165,7 +165,7 @@ export function VideoHero() {
           loop
           playsInline
           className="absolute inset-0 w-full h-full object-cover"
-          style={{ filter: 'brightness(0.6) saturate(1.15)' }}
+          style={{ filter: 'brightness(1.0) saturate(1.2)' }}
         >
           <source src="/Create_a_premium_cinematic_G (1).mp4" type="video/mp4" />
         </video>
@@ -173,14 +173,14 @@ export function VideoHero() {
         {/* Multi-layer depth overlay */}
         <div className="absolute inset-0" style={{
           background: `linear-gradient(to bottom,
-            rgba(6,12,26,0.55)  0%,
-            rgba(6,12,26,0.08)  40%,
-            rgba(6,12,26,0.18)  70%,
-            rgba(6,12,26,0.96) 100%)`,
+            rgba(6,12,26,0.30)  0%,
+            rgba(6,12,26,0.04)  40%,
+            rgba(6,12,26,0.12)  70%,
+            rgba(6,12,26,0.94) 100%)`,
         }} />
         {/* Left vignette */}
         <div className="absolute inset-0"
-          style={{ background: 'linear-gradient(to right, rgba(6,12,26,0.65) 0%, transparent 55%)' }} />
+          style={{ background: 'linear-gradient(to right, rgba(6,12,26,0.40) 0%, transparent 55%)' }} />
         {/* Chromatic top line */}
         <div className="absolute top-0 inset-x-0 h-px"
           style={{ background: 'linear-gradient(90deg, transparent, rgba(0,174,239,0.6), transparent)' }} />
