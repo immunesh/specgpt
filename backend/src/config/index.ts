@@ -16,11 +16,13 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default('15m'),
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
 
-  ANTHROPIC_API_KEY: z.string().optional(),
+  OLLAMA_BASE_URL: z.string().default('http://localhost:11434'),
+  OLLAMA_MODEL: z.string().default('llama3.2'),
+  OLLAMA_EMBED_MODEL: z.string().default('nomic-embed-text'),
+  CLAUDE_MAX_TOKENS: z.string().default('4096').transform(Number),
+
   GROQ_API_KEY: z.string().optional(),
   GROQ_MODEL: z.string().default('llama-3.3-70b-versatile'),
-  CLAUDE_MODEL: z.string().default('llama-3.3-70b-versatile'),
-  CLAUDE_MAX_TOKENS: z.string().default('4096').transform(Number),
 
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
@@ -32,9 +34,9 @@ const envSchema = z.object({
 
   VOYAGE_API_KEY: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
-  EMBEDDING_PROVIDER: z.enum(['voyage', 'openai']).default('voyage'),
-  EMBEDDING_MODEL: z.string().default('voyage-large-2'),
-  EMBEDDING_DIMENSIONS: z.string().default('1024').transform(Number),
+  EMBEDDING_PROVIDER: z.enum(['voyage', 'openai', 'ollama']).default('ollama'),
+  EMBEDDING_MODEL: z.string().default('nomic-embed-text'),
+  EMBEDDING_DIMENSIONS: z.string().default('768').transform(Number),
 
   RATE_LIMIT_WINDOW_MS: z.string().default('60000').transform(Number),
   RATE_LIMIT_MAX_REQUESTS: z.string().default('100').transform(Number),
@@ -72,15 +74,17 @@ export const config = {
     refreshExpiresIn: parsed.data.JWT_REFRESH_EXPIRES_IN,
   },
 
-  anthropic: {
-    apiKey: parsed.data.ANTHROPIC_API_KEY ?? '',
-    model: parsed.data.CLAUDE_MODEL,
+  ollama: {
+    baseUrl: parsed.data.OLLAMA_BASE_URL,
+    model: parsed.data.OLLAMA_MODEL,
+    embedModel: parsed.data.OLLAMA_EMBED_MODEL,
     maxTokens: parsed.data.CLAUDE_MAX_TOKENS,
   },
 
   groq: {
-    apiKey: parsed.data.GROQ_API_KEY ?? '',
+    apiKey: parsed.data.GROQ_API_KEY,
     model: parsed.data.GROQ_MODEL,
+    maxTokens: parsed.data.CLAUDE_MAX_TOKENS,
   },
 
   google: {

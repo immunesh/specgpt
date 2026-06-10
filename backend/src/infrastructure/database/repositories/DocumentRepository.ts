@@ -7,9 +7,16 @@ import {
   VectorSearchResult,
 } from '@/domain/repositories/IDocumentRepository'
 
+type SafeDocument = Omit<Document, 'fileSize'> & { fileSize: number }
+
+function toSafe(doc: Document): SafeDocument {
+  return { ...doc, fileSize: Number(doc.fileSize) }
+}
+
 export class DocumentRepository implements IDocumentRepository {
   async findById(id: string): Promise<Document | null> {
-    return prisma.document.findUnique({ where: { id } })
+    const doc = await prisma.document.findUnique({ where: { id } })
+    return doc ? (toSafe(doc) as unknown as Document) : null
   }
 
   async findMany(params: {
@@ -41,11 +48,11 @@ export class DocumentRepository implements IDocumentRepository {
       prisma.document.count({ where }),
     ])
 
-    return { documents, total }
+    return { documents: documents.map(toSafe) as unknown as Document[], total }
   }
 
   async create(data: CreateDocumentDto): Promise<Document> {
-    return prisma.document.create({
+    const doc = await prisma.document.create({
       data: {
         name: data.name,
         fileName: data.fileName,
@@ -59,6 +66,7 @@ export class DocumentRepository implements IDocumentRepository {
         uploadedBy: data.uploadedBy,
       },
     })
+    return toSafe(doc) as unknown as Document
   }
 
   async updateStatus(
@@ -66,7 +74,7 @@ export class DocumentRepository implements IDocumentRepository {
     status: DocumentStatus,
     errorMessage?: string,
   ): Promise<Document> {
-    return prisma.document.update({
+    const doc = await prisma.document.update({
       where: { id },
       data: {
         status,
@@ -74,6 +82,7 @@ export class DocumentRepository implements IDocumentRepository {
         ...(status === DocumentStatus.READY && { processedAt: new Date() }),
       },
     })
+    return toSafe(doc) as unknown as Document
   }
 
   async updateMetadata(
@@ -89,7 +98,8 @@ export class DocumentRepository implements IDocumentRepository {
       processedAt?: Date
     },
   ): Promise<Document> {
-    return prisma.document.update({ where: { id }, data })
+    const doc = await prisma.document.update({ where: { id }, data })
+    return toSafe(doc) as unknown as Document
   }
 
   async delete(id: string): Promise<void> {
@@ -113,13 +123,10 @@ export class DocumentRepository implements IDocumentRepository {
   }
 
   async setEmbedding(chunkId: string, embedding: number[]): Promise<void> {
-    // pgvector requires raw SQL for vector operations
-    const vectorStr = `[${embedding.join(',')}]`
-    await prisma.$executeRaw`
-      UPDATE document_chunks
-      SET embedding = ${vectorStr}::vector
-      WHERE id = ${chunkId}::uuid
-    `
+    await prisma.documentChunk.update({
+      where: { id: chunkId },
+      data: { embedding },
+    })
   }
 
   async vectorSearch(params: {
@@ -128,87 +135,36 @@ export class DocumentRepository implements IDocumentRepository {
     documentIds?: string[]
   }): Promise<VectorSearchResult[]> {
     const { embedding, limit = 5, documentIds } = params
-    const vectorStr = `[${embedding.join(',')}]`
     const limitVal = Math.min(limit, 20)
 
-    type RawResult = {
-      id: string
-      document_id: string
-      chunk_index: number
-      content: string
-      content_hash: string
-      page_start: number | null
-      page_end: number | null
-      section: string | null
-      token_count: number | null
-      created_at: Date
-      similarity: number
-      doc_id: string
-      doc_name: string
-      doc_spec_number: string | null
-      doc_series: string | null
-      doc_release: string | null
-    }
+    const chunks = await prisma.documentChunk.findMany({
+      where: {
+        ...(documentIds && documentIds.length > 0 ? { documentId: { in: documentIds } } : {}),
+        document: { status: 'READY' },
+        NOT: { embedding: { isEmpty: true } },
+      },
+      include: { document: true },
+    })
 
-    let rows: RawResult[]
+    // Cosine similarity in JS (no pgvector needed)
+    const scored = chunks.map((chunk) => {
+      const a = chunk.embedding
+      const b = embedding
+      let dot = 0, normA = 0, normB = 0
+      for (let i = 0; i < a.length; i++) {
+        dot += a[i] * b[i]
+        normA += a[i] * a[i]
+        normB += b[i] * b[i]
+      }
+      const similarity = normA && normB ? dot / (Math.sqrt(normA) * Math.sqrt(normB)) : 0
+      return { chunk, similarity }
+    })
 
-    if (documentIds && documentIds.length > 0) {
-      rows = await prisma.$queryRaw<RawResult[]>`
-        SELECT
-          dc.id, dc.document_id, dc.chunk_index, dc.content, dc.content_hash,
-          dc.page_start, dc.page_end, dc.section, dc.token_count, dc.created_at,
-          1 - (dc.embedding <=> ${vectorStr}::vector) AS similarity,
-          d.id AS doc_id, d.name AS doc_name,
-          d.spec_number AS doc_spec_number,
-          d.series AS doc_series, d.release AS doc_release
-        FROM document_chunks dc
-        JOIN documents d ON d.id = dc.document_id
-        WHERE dc.embedding IS NOT NULL
-          AND dc.document_id = ANY(${documentIds}::uuid[])
-          AND d.status = 'READY'
-        ORDER BY dc.embedding <=> ${vectorStr}::vector
-        LIMIT ${limitVal}
-      `
-    } else {
-      rows = await prisma.$queryRaw<RawResult[]>`
-        SELECT
-          dc.id, dc.document_id, dc.chunk_index, dc.content, dc.content_hash,
-          dc.page_start, dc.page_end, dc.section, dc.token_count, dc.created_at,
-          1 - (dc.embedding <=> ${vectorStr}::vector) AS similarity,
-          d.id AS doc_id, d.name AS doc_name,
-          d.spec_number AS doc_spec_number,
-          d.series AS doc_series, d.release AS doc_release
-        FROM document_chunks dc
-        JOIN documents d ON d.id = dc.document_id
-        WHERE dc.embedding IS NOT NULL
-          AND d.status = 'READY'
-        ORDER BY dc.embedding <=> ${vectorStr}::vector
-        LIMIT ${limitVal}
-      `
-    }
+    scored.sort((a, b) => b.similarity - a.similarity)
 
-    return rows.map((row) => ({
-      chunk: {
-        id: row.id,
-        documentId: row.document_id,
-        chunkIndex: row.chunk_index,
-        content: row.content,
-        contentHash: row.content_hash,
-        embedding: null,
-        pageStart: row.page_start,
-        pageEnd: row.page_end,
-        section: row.section,
-        tokenCount: row.token_count,
-        createdAt: row.created_at,
-        document: {
-          id: row.doc_id,
-          name: row.doc_name,
-          specNumber: row.doc_spec_number,
-          series: row.doc_series as SpecSeries | null,
-          release: row.doc_release as Release | null,
-        } as Document,
-      } as DocumentChunk & { document: Document },
-      similarity: Number(row.similarity),
+    return scored.slice(0, limitVal).map(({ chunk, similarity }) => ({
+      chunk: chunk as DocumentChunk & { document: Document },
+      similarity,
     }))
   }
 

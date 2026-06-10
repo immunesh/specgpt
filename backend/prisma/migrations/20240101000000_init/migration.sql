@@ -1,5 +1,4 @@
--- CreateExtensions (already done in docker init.sql, but safe to re-run)
-CREATE EXTENSION IF NOT EXISTS vector;
+-- CreateExtensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
@@ -160,7 +159,7 @@ CREATE TABLE "document_chunks" (
     "chunk_index"  INTEGER NOT NULL,
     "content"      TEXT NOT NULL,
     "content_hash" VARCHAR(64) NOT NULL,
-    "embedding"    vector(1024),
+    "embedding"    FLOAT8[],
     "page_start"   INTEGER,
     "page_end"     INTEGER,
     "section"      VARCHAR(500),
@@ -173,10 +172,6 @@ CREATE UNIQUE INDEX "document_chunks_document_id_chunk_index_key" ON "document_c
 CREATE INDEX "document_chunks_document_id_idx" ON "document_chunks"("document_id");
 CREATE INDEX "document_chunks_content_hash_idx" ON "document_chunks"("content_hash");
 
--- IVFFlat index for approximate nearest-neighbor search (1024-dim vectors)
--- Lists = sqrt(number of rows), tune after initial data load
-CREATE INDEX "document_chunks_embedding_idx" ON "document_chunks"
-    USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
 
 ALTER TABLE "document_chunks" ADD CONSTRAINT "document_chunks_document_id_fkey"
     FOREIGN KEY ("document_id") REFERENCES "documents"("id") ON DELETE CASCADE ON UPDATE CASCADE;
