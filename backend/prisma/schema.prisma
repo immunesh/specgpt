@@ -5,13 +5,12 @@
 
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["postgresqlExtensions", "fullTextSearch"]
+  previewFeatures = ["fullTextSearch"]
 }
 
 datasource db {
-  provider   = "postgresql"
-  url        = env("DATABASE_URL")
-  extensions = [vector, uuid_ossp(map: "uuid-ossp"), pg_trgm]
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ============================================================
@@ -215,8 +214,7 @@ model DocumentChunk {
   content       String    @db.Text
   contentHash   String    @map("content_hash") @db.VarChar(64)
 
-  // pgvector embedding (1024 dimensions — Voyage AI / compatible models)
-  embedding     Unsupported("vector(1024)")?
+  embedding     Float[]
 
   // Positional metadata
   pageStart     Int?      @map("page_start")

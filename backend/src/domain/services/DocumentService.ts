@@ -1,7 +1,8 @@
 import path from 'path'
 import { Document, DocumentStatus, Release, SpecSeries } from '@prisma/client'
 import { documentRepository } from '@/core/container'
-import { documentQueue } from '@/infrastructure/queue/documentQueue'
+import { documentQueue, redisAvailable } from '@/infrastructure/queue/documentQueue'
+import { documentProcessor } from '@/core/rag/DocumentProcessor'
 import { fileStorageService } from '@/infrastructure/storage/FileStorageService'
 import { logger } from '@/utils/logger'
 import { NotFoundError, ValidationError } from '@/utils/errors'
@@ -37,13 +38,20 @@ export class DocumentService {
       uploadedBy: userId,
     })
 
-    // Enqueue for async processing
-    await documentQueue.add(
-      { documentId: document.id, filePath, userId },
-      { jobId: document.id },
-    )
+    // Process directly if Redis unavailable, otherwise enqueue
+    if (redisAvailable) {
+      await documentQueue.add(
+        { documentId: document.id, filePath, userId },
+        { jobId: document.id },
+      )
+      logger.info('Document queued for processing', { documentId: document.id })
+    } else {
+      logger.info('Redis unavailable — processing document directly', { documentId: document.id })
+      documentProcessor.process(document.id, filePath).catch((err) =>
+        logger.error('Direct document processing failed', { documentId: document.id, error: err.message }),
+      )
+    }
 
-    logger.info('Document queued for processing', { documentId: document.id })
     return document
   }
 
@@ -99,10 +107,16 @@ export class DocumentService {
     await documentRepository.deleteChunks(id)
     await documentRepository.updateStatus(id, DocumentStatus.PENDING)
 
-    await documentQueue.add(
-      { documentId: id, filePath: doc.filePath, userId },
-      { jobId: `${id}-reprocess-${Date.now()}` },
-    )
+    if (redisAvailable) {
+      await documentQueue.add(
+        { documentId: id, filePath: doc.filePath, userId },
+        { jobId: `${id}-reprocess-${Date.now()}` },
+      )
+    } else {
+      documentProcessor.process(id, doc.filePath).catch((err) =>
+        logger.error('Direct document reprocessing failed', { documentId: id, error: err.message }),
+      )
+    }
 
     return documentRepository.findById(id) as Promise<Document>
   }

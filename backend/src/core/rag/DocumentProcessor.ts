@@ -2,7 +2,6 @@ import { DocumentStatus, Release, SpecSeries } from '@prisma/client'
 import { documentRepository } from '@/core/container'
 import { pdfExtractor } from './PdfExtractor'
 import { chunkingService } from './ChunkingService'
-import { embeddingService } from '@/infrastructure/vector-store/EmbeddingService'
 import { fileStorageService } from '@/infrastructure/storage/FileStorageService'
 import { logger } from '@/utils/logger'
 
@@ -75,15 +74,12 @@ export class DocumentProcessor {
           contentHash: c.contentHash,
           pageStart: c.pageStart,
           pageEnd: c.pageEnd,
-          section: c.section,
+          section: c.section ? c.section.slice(0, 490) : c.section,
           tokenCount: c.tokenCount,
         })),
       )
 
-      // ── 6. Embed chunks in batches ───────────────────────────────
-      await this.embedChunks(documentId, chunks.map((c) => c.content))
-
-      // ── 7. Mark READY ────────────────────────────────────────────
+      // ── 6. Mark READY ────────────────────────────────────────────
       await documentRepository.updateMetadata(documentId, {
         chunkCount: chunks.length,
         processedAt: new Date(),
@@ -99,37 +95,6 @@ export class DocumentProcessor {
         err.message,
       )
       throw err
-    }
-  }
-
-  private async embedChunks(documentId: string, texts: string[]): Promise<void> {
-    const BATCH_SIZE = 32
-
-    for (let i = 0; i < texts.length; i += BATCH_SIZE) {
-      const batch = texts.slice(i, i + BATCH_SIZE)
-      const embeddings = await embeddingService.embedBatch(batch)
-
-      // Fetch the chunk IDs for this batch (by chunkIndex)
-      const { prisma } = await import('@/infrastructure/database/client')
-      const dbChunks = await prisma.documentChunk.findMany({
-        where: {
-          documentId,
-          chunkIndex: { gte: i, lt: i + BATCH_SIZE },
-        },
-        orderBy: { chunkIndex: 'asc' },
-        select: { id: true },
-      })
-
-      await Promise.all(
-        dbChunks.map((chunk, idx) =>
-          documentRepository.setEmbedding(chunk.id, embeddings.embeddings[idx]),
-        ),
-      )
-
-      logger.debug('Batch embedded', {
-        documentId,
-        batch: `${i + 1}–${Math.min(i + BATCH_SIZE, texts.length)}/${texts.length}`,
-      })
     }
   }
 }

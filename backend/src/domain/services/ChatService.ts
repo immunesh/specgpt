@@ -82,8 +82,8 @@ export class ChatService {
     const history = await conversationRepository.getMessages(conversationId, input.userId, 20)
     const priorHistory = history.slice(0, -1) // exclude the message we just added
 
-    // 5. RAG retrieval
-    const { contextText, sources } = await ragRetriever.retrieve(input.message)
+    // 5. RAG retrieval (graceful fallback — chat works even without embeddings)
+    const { contextText, sources } = await ragRetriever.retrieve(input.message).catch(() => ({ contextText: '', sources: [] as SourceReference[] }))
 
     // 6. Build prompt
     const prompt = promptBuilder.build(input.message, contextText, priorHistory)
@@ -98,7 +98,7 @@ export class ChatService {
       content: result.content,
       sources: sources as object[],
       tokenCount: result.inputTokens + result.outputTokens,
-      modelUsed: config.anthropic.model,
+      modelUsed: config.groq.model,
       latencyMs: result.latencyMs,
     })
 
@@ -106,7 +106,7 @@ export class ChatService {
     await analyticsRepository.recordApiUsage({
       userId: input.userId,
       conversationId,
-      model: config.anthropic.model,
+      model: config.groq.model,
       inputTokens: result.inputTokens,
       outputTokens: result.outputTokens,
       latencyMs: result.latencyMs,
@@ -162,10 +162,10 @@ export class ChatService {
     // 3. Save user message
     await conversationRepository.createMessage({ conversationId, role: 'user', content: input.message })
 
-    // 4. Parallel: history + RAG retrieval
+    // 4. Parallel: history + RAG retrieval (graceful fallback — chat works even without embeddings)
     const [history, ragResult] = await Promise.all([
       conversationRepository.getMessages(conversationId, input.userId, 20),
-      ragRetriever.retrieve(input.message),
+      ragRetriever.retrieve(input.message).catch(() => ({ contextText: '', sources: [] as SourceReference[] })),
     ])
 
     const priorHistory = history.slice(0, -1)
@@ -185,13 +185,13 @@ export class ChatService {
         content: result.content,
         sources: sources as object[],
         tokenCount: result.inputTokens + result.outputTokens,
-        modelUsed: config.anthropic.model,
+        modelUsed: config.groq.model,
         latencyMs: result.latencyMs,
       }),
       analyticsRepository.recordApiUsage({
         userId: input.userId,
         conversationId,
-        model: config.anthropic.model,
+        model: config.groq.model,
         inputTokens: result.inputTokens,
         outputTokens: result.outputTokens,
         latencyMs: result.latencyMs,

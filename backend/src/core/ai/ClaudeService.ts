@@ -13,30 +13,35 @@ export interface ChatCompletionResult {
 }
 
 export class ClaudeService {
-  private client: Groq
+  private readonly client: Groq
 
   constructor() {
+    if (!config.groq.apiKey) {
+      throw new Error('GROQ_API_KEY is not set in environment variables')
+    }
     this.client = new Groq({ apiKey: config.groq.apiKey })
   }
 
   async complete(prompt: BuiltPrompt): Promise<ChatCompletionResult> {
     const start = Date.now()
 
-    const response = await this.client.chat.completions.create({
+    const completion = await this.client.chat.completions.create({
       model: config.groq.model,
-      max_tokens: config.anthropic.maxTokens,
       messages: [
         { role: 'system', content: prompt.system },
         ...prompt.messages,
       ],
+      max_tokens: config.groq.maxTokens,
+      stream: false,
     })
 
-    const content = response.choices[0]?.message?.content ?? ''
+    const content = completion.choices[0]?.message?.content ?? ''
+    const usage = completion.usage
 
     return {
       content,
-      inputTokens: response.usage?.prompt_tokens ?? 0,
-      outputTokens: response.usage?.completion_tokens ?? 0,
+      inputTokens: usage?.prompt_tokens ?? 0,
+      outputTokens: usage?.completion_tokens ?? 0,
       latencyMs: Date.now() - start,
     }
   }
@@ -56,13 +61,16 @@ export class ClaudeService {
 
       const stream = await this.client.chat.completions.create({
         model: config.groq.model,
-        max_tokens: config.anthropic.maxTokens,
         messages: [
           { role: 'system', content: prompt.system },
           ...prompt.messages,
         ],
+        max_tokens: config.groq.maxTokens,
         stream: true,
       })
+
+      let inputTokens = 0
+      let outputTokens = 0
 
       for await (const chunk of stream) {
         const text = chunk.choices[0]?.delta?.content ?? ''
@@ -70,17 +78,21 @@ export class ClaudeService {
           fullContent += text
           this.writeSSE(res, { type: 'delta', content: text })
         }
+        if (chunk.x_groq?.usage) {
+          inputTokens = chunk.x_groq.usage.prompt_tokens ?? 0
+          outputTokens = chunk.x_groq.usage.completion_tokens ?? 0
+        }
       }
 
       if (sources.length > 0) {
         this.writeSSE(res, { type: 'sources', sources })
       }
 
-      this.writeSSE(res, { type: 'end', totalTokens: 0, latencyMs: Date.now() - start })
+      this.writeSSE(res, { type: 'end', totalTokens: inputTokens + outputTokens, latencyMs: Date.now() - start })
       res.write('data: [DONE]\n\n')
       res.end()
 
-      return { content: fullContent, inputTokens: 0, outputTokens: 0, latencyMs: Date.now() - start }
+      return { content: fullContent, inputTokens, outputTokens, latencyMs: Date.now() - start }
     } catch (err: unknown) {
       logger.error('Groq streaming error', { error: (err as Error).message })
       if (!res.headersSent) {

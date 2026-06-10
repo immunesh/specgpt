@@ -42,6 +42,9 @@ export class EmbeddingService {
     if (config.embedding.provider === 'openai') {
       return this.embedWithOpenAI(truncated)
     }
+    if (config.embedding.provider === 'ollama') {
+      return this.embedWithOllama(truncated)
+    }
     return this.embedWithVoyage(truncated)
   }
 
@@ -68,30 +71,44 @@ export class EmbeddingService {
       throw new AppError('VOYAGE_API_KEY not configured', 500, 'EMBEDDING_CONFIG_ERROR')
     }
 
-    const response = await fetch('https://api.voyageai.com/v1/embeddings', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${config.embedding.voyageApiKey}`,
-      },
-      body: JSON.stringify({
-        input: texts,
-        model: config.embedding.model,
-        input_type: 'document',
-      }),
-    })
+    const MAX_RETRIES = 4
+    let delay = 5000
 
-    if (!response.ok) {
-      const error = await response.text()
-      logger.error('Voyage AI embedding error', { status: response.status, error })
-      throw new AppError(`Embedding API error: ${response.status}`, 502, 'EMBEDDING_API_ERROR')
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      const response = await fetch('https://api.voyageai.com/v1/embeddings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${config.embedding.voyageApiKey}`,
+        },
+        body: JSON.stringify({
+          input: texts,
+          model: config.embedding.model,
+          input_type: 'document',
+        }),
+      })
+
+      if (response.status === 429) {
+        logger.warn('Voyage AI rate limit hit, retrying...', { attempt, delay })
+        await new Promise((r) => setTimeout(r, delay))
+        delay *= 2
+        continue
+      }
+
+      if (!response.ok) {
+        const error = await response.text()
+        logger.error('Voyage AI embedding error', { status: response.status, error })
+        throw new AppError(`Embedding API error: ${response.status}`, 502, 'EMBEDDING_API_ERROR')
+      }
+
+      const data = (await response.json()) as VoyageResponse
+      return {
+        embeddings: data.data.sort((a, b) => a.index - b.index).map((d) => d.embedding),
+        totalTokens: data.usage.total_tokens,
+      }
     }
 
-    const data = (await response.json()) as VoyageResponse
-    return {
-      embeddings: data.data.sort((a, b) => a.index - b.index).map((d) => d.embedding),
-      totalTokens: data.usage.total_tokens,
-    }
+    throw new AppError('Voyage AI rate limit exceeded after retries', 429, 'EMBEDDING_API_ERROR')
   }
 
   private async embedWithOpenAI(texts: string[]): Promise<BatchEmbeddingResult> {
@@ -123,6 +140,29 @@ export class EmbeddingService {
       embeddings: data.data.sort((a, b) => a.index - b.index).map((d) => d.embedding),
       totalTokens: data.usage.total_tokens,
     }
+  }
+
+  private async embedWithOllama(texts: string[]): Promise<BatchEmbeddingResult> {
+    const embeddings: number[][] = []
+
+    for (const text of texts) {
+      const response = await fetch(`${config.ollama.baseUrl}/api/embeddings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: config.ollama.embedModel, prompt: text }),
+      })
+
+      if (!response.ok) {
+        const error = await response.text()
+        logger.error('Ollama embedding error', { status: response.status, error })
+        throw new AppError(`Ollama embedding error: ${response.status}`, 502, 'EMBEDDING_API_ERROR')
+      }
+
+      const data = (await response.json()) as { embedding: number[] }
+      embeddings.push(data.embedding)
+    }
+
+    return { embeddings, totalTokens: 0 }
   }
 
   private sleep(ms: number): Promise<void> {
