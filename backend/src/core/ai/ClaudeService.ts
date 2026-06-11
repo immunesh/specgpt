@@ -113,4 +113,10 @@ export class ClaudeService {
   }
 }
 
-export const claudeService = new ClaudeService()
+let _claudeService: ClaudeService | null = null
+export const claudeService = new Proxy({} as ClaudeService, {
+  get(_target, prop) {
+    if (!_claudeService) _claudeService = new ClaudeService()
+    return (_claudeService as unknown as Record<string | symbol, unknown>)[prop]
+  },
+})

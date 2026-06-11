@@ -37,10 +37,10 @@ const REJECT_KEYWORDS = new Set([
 ])
 
 export class FiveGGuard {
-  private client: Groq
+  private client: Groq | null
 
   constructor() {
-    this.client = new Groq({ apiKey: config.groq.apiKey })
+    this.client = config.groq.apiKey ? new Groq({ apiKey: config.groq.apiKey }) : null
   }
 
   async check(query: string): Promise<GuardResult> {
@@ -63,6 +63,10 @@ export class FiveGGuard {
   }
 
   private async classifyWithAI(query: string): Promise<GuardResult> {
+    if (!this.client) {
+      logger.warn('GROQ_API_KEY not set, allowing query by default')
+      return { allowed: true }
+    }
     try {
       const response = await this.client.chat.completions.create({
         model: 'llama-3.1-8b-instant',
